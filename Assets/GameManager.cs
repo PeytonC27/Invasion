@@ -5,8 +5,15 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    [Header("Player Turn Options")]
+    [SerializeField] KeyCode replace = KeyCode.R;
+    [SerializeField] KeyCode discard = KeyCode.D;
+
     private Stack<Card> deck;
     private List<Card> playerHand;
+
+    bool playerTurn = true;
+    int mana = 2;
 
 
     private void Start()
@@ -19,7 +26,27 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        
+        if (playerTurn)
+            mana = 2;
+        else
+            HandleEnemyTurn();
+    }
+
+    public void OnSlotClicked(Slot slot)
+    {
+        if (Input.GetKey(replace) && slot.HasCard)
+            slot.AddCard(deck.Pop());
+        else if (Input.GetKey(discard) && slot.HasCard)
+            slot.RemoveCard();
+        else if (!slot.HasCard)
+            slot.AddCard(deck.Pop());
+
+        Debug.Log("Top of deck: " + deck.Peek().GetType().Name);
+    }
+
+    void HandleEnemyTurn()
+    {
+
     }
 
     void ShuffleDeck()
