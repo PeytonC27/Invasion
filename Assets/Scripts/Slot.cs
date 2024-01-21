@@ -9,7 +9,7 @@ public class Slot : MonoBehaviour
     GameManager gameManager;
     SpriteRenderer spriteRenderer;
     GameObject border;
-    Card? card;
+    public Card? Card { get; private set; }
 
     // Start is called before the first frame update
     void Start()
@@ -35,7 +35,7 @@ public class Slot : MonoBehaviour
 
     public void AddCard(Card card)
     {
-        this.card = card;
+        this.Card = card;
         HasCard = true;
         UpdateSprite(card.Sprite);
     }
@@ -44,7 +44,7 @@ public class Slot : MonoBehaviour
     {
         Sprite sprite = Resources.Load<Sprite>("sprites/empty_slot");
         UpdateSprite(sprite);
-        card = null;
+        Card = null;
         HasCard = false;
     }
 
