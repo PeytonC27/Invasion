@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class Squire : Card
+public class Squire : HeroCard
 {
-    public Squire() : base(Resources.Load<Sprite>("sprites/squire"), 1) { }
+    public Squire() : base(Resources.Load<Sprite>("sprites/squire"), 1, 1) { }
 
     public override void Action(Board board, int row, int column)
     {

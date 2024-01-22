@@ -8,11 +8,14 @@ public class Dragonborn : EnemyCard
 
     public override void Action(Board board, int row, int column)
     {
-        Card otherCard = board.GetCardAt(row, column - 1);
-        if (otherCard is Card && otherCard is not EnemyCard)
+        if (board.GetCardAt(row, column - 1) is HeroCard)
         {
-            if (otherCard.Defense < Damage)
-                Debug.Log(otherCard.GetType().Name + " was killed by Ogre");
+            HeroCard hero = board.GetCardAt(row, column - 1) as HeroCard;
+            if (hero.Defense < Damage)
+            {
+                Debug.Log(hero.GetType().Name + " was killed by Ogre");
+                board.RemoveCardAt(row, column - 1);
+            }
         }
     }
 }

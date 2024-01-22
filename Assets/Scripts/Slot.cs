@@ -46,13 +46,15 @@ public class Slot : MonoBehaviour
         UpdateSprite(card.Sprite);
     }
 
-    public void RemoveCard()
+    public Card RemoveCard()
     {
+        Card temp = this.Card;
+        Card = null;
         Sprite sprite = Resources.Load<Sprite>("sprites/empty_slot");
         UpdateSprite(sprite);
-        Card = null;
         HasCard = false;
         textLabel.text = "";
+        return temp;
     }
 
     /// <summary>

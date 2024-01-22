@@ -5,7 +5,6 @@ using UnityEngine;
 public abstract class Card
 {
     public Sprite Sprite { get; protected set; }
-    public int Defense { get; protected set; }
     public int Damage { get; protected set; }
 
     public Card(Sprite sprite, int damage)

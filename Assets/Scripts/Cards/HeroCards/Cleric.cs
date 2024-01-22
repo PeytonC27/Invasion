@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Cleric : Card
+public class Cleric : HeroCard
 {
-    public Cleric() : base(Resources.Load<Sprite>("sprites/cleric"), 0) { }
+    public Cleric() : base(Resources.Load<Sprite>("sprites/cleric"), 0, 1) { }
 
     public override void Action(Board board, int row, int column)
     {

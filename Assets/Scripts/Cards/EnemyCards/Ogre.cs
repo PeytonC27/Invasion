@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.AI;
 
 public class Ogre : EnemyCard
 {
@@ -8,12 +9,13 @@ public class Ogre : EnemyCard
 
     public override void Action(Board board, int row, int column)
     {
-        Card hero = board.GetCardAt(row, column - 1);
-        if (hero is Card && hero is not EnemyCard)
+        if (board.GetCardAt(row, column - 1) is HeroCard)
         {
+            HeroCard hero = board.GetCardAt(row, column - 1) as HeroCard;
             if (hero.Defense < Damage)
             {
                 Debug.Log(hero.GetType().Name + " was killed by Ogre");
+                board.RemoveCardAt(row, column - 1);
             }
         }
     }

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-public class ShieldBearer : Card
+public class ShieldBearer : HeroCard
 {
-    public ShieldBearer() : base(Resources.Load<Sprite>("sprites/shield_bearer"), 1) { }
+    public ShieldBearer() : base(Resources.Load<Sprite>("sprites/shield_bearer"), 1, 2) { }
 
     public override void Action(Board board, int row, int column)
     {

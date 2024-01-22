@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -39,17 +40,24 @@ public class DrawSlotManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Clears the currently highlighted slot
+    /// </summary>
     public void ClearCurrentSlot()
     {
         GetSlotFromSelection().RemoveCard();
     }
 
+    /// <summary>
+    /// Returns the currently highlighted slot
+    /// </summary>
+    /// <returns></returns>
     public Slot ExtractSlotFromSelection()
     {
         return GetSlotFromSelection();
     }
 
-    public void FillSlots(Card card1, Card card2, Card card3)
+    public void FillSlots(HeroCard card1, HeroCard card2, HeroCard card3)
     {
         selectHighlight.SetActive(true);
         slot1.AddCard(card1);
@@ -59,12 +67,26 @@ public class DrawSlotManager : MonoBehaviour
         selectHighlight.transform.position = slot1.transform.position;
     }
 
-    public void ClearSlots()
+    /// <summary>
+    /// Clears every slot, returning the leftover cards
+    /// </summary>
+    /// <returns></returns>
+    public List<HeroCard> ClearSlots()
     {
+        List<HeroCard> retval = new();
         selectHighlight.SetActive(false);
+        if (slot1.HasCard)
+            retval.Add(slot1.Card as HeroCard);
+        if (slot2.HasCard)
+            retval.Add(slot2.Card as HeroCard);
+        if (slot3.HasCard)
+            retval.Add(slot3.Card as HeroCard);
+
         slot1.RemoveCard();
         slot2.RemoveCard();
         slot3.RemoveCard();
+
+        return retval;
     }
 
     Slot GetSlotFromSelection()

@@ -10,10 +10,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] KeyCode discard = KeyCode.D;
 
     // player deck
-    private Stack<Card> deck;
-    private List<Card> playerHand;
-    private List<Card> drawHand;
-    private List<Card> discardPile;
+    private Stack<HeroCard> deck;
+    private List<HeroCard> discardPile;
 
     // enemy deck
     private Stack<EnemyCard> enemyDeck;
@@ -30,14 +28,12 @@ public class GameManager : MonoBehaviour
     {
         drawSlotManager = GetComponentInChildren<DrawSlotManager>();
 
-        deck = new Stack<Card>();
-        playerHand = new List<Card>();
-        drawHand = new List<Card>();
-        discardPile = new List<Card>();
+        deck = new Stack<HeroCard>();
+        discardPile = new List<HeroCard>();
 
         enemyDeck = new Stack<EnemyCard>();
 
-        ShuffleDeck();
+        SetupDeck();
         ShuffleEnemyDeck();
 
         board = GetComponentInChildren<Board>();
@@ -55,29 +51,18 @@ public class GameManager : MonoBehaviour
             cardOptions = 2;
 
             // clear cards to discard
-            if (drawHand.Count > 0)
-            {
-                foreach (Card card in drawHand)
-                {
-                    discardPile.Add(card);
-                }
-            }
+            discardPile.AddRange(drawSlotManager.ClearSlots());
 
             // get three most recent cards
-            Card card1 = deck.Pop();
-            Card card2 = deck.Pop();
-            Card card3 = deck.Pop();
+            HeroCard card1 = DrawNextCard();
+            HeroCard card2 = DrawNextCard();
+            HeroCard card3 = DrawNextCard();
             drawSlotManager.FillSlots(card1, card2, card3);
 
             // add them to the discard pile
             discardPile.Add(card1);
             discardPile.Add(card2);
             discardPile.Add(card3);
-        }
-        // ==================== PLAYER ACTION TURN ==================== //
-        else if (!playerCardPhase && playerActionPhase)
-        {
-            drawSlotManager.ClearSlots();
         }
 
 
@@ -151,11 +136,13 @@ public class GameManager : MonoBehaviour
     IEnumerator EnemyTurn()
     {
         // fill rightmost column
+        if (enemyDeck.Count < 3)
+            ShuffleEnemyDeck();
         board.FillRightmostColumn(enemyDeck.Pop(), enemyDeck.Pop(), enemyDeck.Pop());
         yield return new WaitForSeconds(0.5f);
 
         // move active enemies
-        board.MoveAllEnemies();
+        discardPile.AddRange(board.MoveAllEnemies());
         yield return new WaitForSeconds(0.5f);
 
         // perform enemy actions
@@ -167,9 +154,16 @@ public class GameManager : MonoBehaviour
         playerActionPhase = false;
     }
 
-    void ShuffleDeck()
+    public HeroCard DrawNextCard()
     {
-        List<Card> allCards = new List<Card>();
+        if (deck.Count == 0)
+            ShuffleInDeck(discardPile);
+        return deck.Pop();
+    }
+
+    void SetupDeck()
+    {
+        List<HeroCard> allCards = new List<HeroCard>();
 
         // add nine of each basic card
         for (int i = 0; i < 9; i++) 
@@ -180,22 +174,7 @@ public class GameManager : MonoBehaviour
             allCards.Add(new Trickster());
         }
 
-        // shuffle all the cards
-        int n = allCards.Count;
-        while (n > 1)
-        {
-            n--;
-            int k = Random.Range(0, n);
-            Card value = allCards[k];
-            allCards[k] = allCards[n];
-            allCards[n] = value;
-        }
-
-        // add the cards to the deck
-        foreach (Card card in allCards)
-        {
-            deck.Push(card);
-        }
+        ShuffleInDeck(allCards);
     }
 
     void ShuffleEnemyDeck()
@@ -224,8 +203,23 @@ public class GameManager : MonoBehaviour
 
         // add the cards to the deck
         foreach (EnemyCard card in allCards)
-        {
             enemyDeck.Push(card);
+    }
+
+    void ShuffleInDeck(List<HeroCard> allCards)
+    {
+        // shuffle all the cards
+        int n = allCards.Count;
+        while (n > 1)
+        {
+            n--;
+            int k = Random.Range(0, n);
+            HeroCard value = allCards[k];
+            allCards[k] = allCards[n];
+            allCards[n] = value;
         }
+
+        foreach (HeroCard card in allCards)
+            deck.Push(card);
     }
 }

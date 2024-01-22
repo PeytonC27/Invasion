@@ -41,8 +41,14 @@ public class Board : MonoBehaviour
         return board[column, row].Card;
     }
 
-    public void MoveAllEnemies()
+    /// <summary>
+    /// Moves all the enemies forwards, returning a list of all the hero cards
+    /// that were trampled in the process
+    /// </summary>
+    /// <returns></returns>
+    public List<HeroCard> MoveAllEnemies()
     {
+        List<HeroCard> retval = new();
         for (int i = 0; i < board.GetLength(0); i++)
         {
             for (int j = 0; j < board.GetLength(1); j++)
@@ -59,12 +65,14 @@ public class Board : MonoBehaviour
                     }
 
                     // trample over every card in the enemy's path
-                    for (int k = i - e.MoveSpeed; k > i; k--)
+                    for (int k = i - e.MoveSpeed; k < i; k++)
                     {
                         if (board[k, j].HasCard)
                         {
-                            Debug.Log(e.GetType().Name + " trampled a " + board[i - e.MoveSpeed, j].Card.GetType().Name);
-                            board[k, j].RemoveCard();
+                            Debug.Log(e.GetType().Name + " trampled a " + board[k, j].Card.GetType().Name);
+                            Card trampled = board[k, j].RemoveCard();
+                            if (trampled is HeroCard)
+                                retval.Add(trampled as HeroCard);
                         }
                     }
                     
@@ -74,6 +82,8 @@ public class Board : MonoBehaviour
                 }
             }
         }
+
+        return retval;
     }
 
     public void PerformEnemyActions()

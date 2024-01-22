@@ -9,12 +9,15 @@ public class Goblin : EnemyCard
     public override void Action(Board board, int row, int column)
     {
         int tempDamage = board.Count(c => c is Goblin);
-        Card heroCard = board.GetCardAt(row, column - 1);
 
-        if (heroCard is Card && heroCard is not EnemyCard)
+        if (board.GetCardAt(row, column - 1) is HeroCard)
         {
-            if (heroCard.Defense < tempDamage)
-                Debug.Log(heroCard.GetType().Name + " was killed by Ogre");
+            HeroCard hero = board.GetCardAt(row, column - 1) as HeroCard;
+            if (hero.Defense < tempDamage)
+            {
+                Debug.Log(hero.GetType().Name + " was killed by Goblin!");
+                board.RemoveCardAt(row, column - 1);
+            }
         }
     }
 }
