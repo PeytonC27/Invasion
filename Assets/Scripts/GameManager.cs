@@ -9,17 +9,22 @@ public class GameManager : MonoBehaviour
     [SerializeField] KeyCode replace = KeyCode.R;
     [SerializeField] KeyCode discard = KeyCode.D;
 
+    // player deck
     private Stack<Card> deck;
     private List<Card> playerHand;
     private List<Card> drawHand;
     private List<Card> discardPile;
 
-    DrawSlotManager drawSlotManager;
-    bool playerCardPhase = true, playerActionPhase = false;
-    bool turnStarted = false;
-    int mana = 2;
-    int cardOptions;
+    // enemy deck
+    private Stack<EnemyCard> enemyDeck;
+    private List<EnemyCard> enemyDiscard;
 
+    DrawSlotManager drawSlotManager;
+    Board board;
+    bool playerCardPhase = true, playerActionPhase = false;
+    bool cardPhaseActive = false;
+    int mana = 3;
+    int cardOptions;
 
     private void Start()
     {
@@ -30,7 +35,12 @@ public class GameManager : MonoBehaviour
         drawHand = new List<Card>();
         discardPile = new List<Card>();
 
+        enemyDeck = new Stack<EnemyCard>();
+
         ShuffleDeck();
+        ShuffleEnemyDeck();
+
+        board = GetComponentInChildren<Board>();
 
         // -8, -1, 5, -5
         
@@ -38,10 +48,10 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        // start the player's turn
-        if (playerCardPhase && !turnStarted)
+        // ==================== PLAYER CARD TURN ==================== //
+        if (playerCardPhase && !cardPhaseActive)
         {
-            turnStarted = true;
+            cardPhaseActive = true;
             cardOptions = 2;
 
             // clear cards to discard
@@ -53,7 +63,7 @@ public class GameManager : MonoBehaviour
                 }
             }
 
-            mana = 2;
+            mana = 3;
 
             // get three most recent cards
             Card card1 = deck.Pop();
@@ -66,24 +76,77 @@ public class GameManager : MonoBehaviour
             discardPile.Add(card2);
             discardPile.Add(card3);
         }
-        // start the action turn
+        // ==================== PLAYER ACTION TURN ==================== //
         else if (!playerCardPhase && playerActionPhase)
         {
             drawSlotManager.ClearSlots();
         }
 
 
-        // this ends the card phase
+        // ==================== ENDING CARD PHASE ==================== //
         if (playerCardPhase && Input.GetKeyDown(KeyCode.Escape) || cardOptions <= 0)
         {
             playerCardPhase = false;
+            cardPhaseActive = false;
             playerActionPhase = true;
+            cardOptions = 2;
+
+            // count extra mana from clerics
+            Slot[,] grid = board.GetGrid();
+
+            for (int i = 0; i < grid.GetLength(0); i++)
+                for (int j = 0; j < grid.GetLength(1); j++)
+                    if (grid[i, j].HasCard && grid[i, j].Card is Cleric)
+                        mana++;
+
+            Debug.Log("Mana: " + mana);
+        }
+
+        // ==================== ENEMY TURN ==================== //
+        if (mana == 0 || Input.GetKeyDown(KeyCode.Escape))
+        {
+            // fill rightmost column
+            board.FillRightmostColumn(enemyDeck.Pop(), enemyDeck.Pop(), enemyDeck.Pop());
+
+
+            // move active enemies
+            Slot[,] grid = board.GetGrid();
+            for (int i = 0; i < grid.GetLength(0); i++)
+            {
+                for (int j = 0;j < grid.GetLength(1); j++)
+                {
+                    if (grid[i, j].HasCard && grid[i,j].Card is EnemyCard)
+                    {
+                        EnemyCard e = grid[i, j].Card as EnemyCard;
+                        grid[i - e.MoveSpeed, j].AddCard(e);
+                        grid[i, j].RemoveCard();
+                    }
+                }
+            }
+
+            // perform enemy actions
+            for (int i = 0; i < grid.GetLength(0); i++)
+            {
+                for (int j = 0; j < grid.GetLength(1); j++)
+                {
+                    if (grid[i, j].HasCard && grid[i, j].Card is EnemyCard)
+                    {
+                        grid[i, j].Card.Action(grid, j, i);
+                    }
+                }
+            }
+
+            board.RefreshHealthDisplay();
+
+            playerCardPhase = true;
+            playerActionPhase = false;
         }
     }
 
     public void OnSlotClicked(Slot slot)
     {
-        if (cardOptions > 0)
+        // ==================== CARD MANIPULATION ==================== //
+        if (cardOptions > 0 && cardPhaseActive)
         {
             if (Input.GetKey(replace) && slot.HasCard)
             {
@@ -111,11 +174,18 @@ public class GameManager : MonoBehaviour
                 cardOptions--;
             }
         }
-    }
 
-    void HandleEnemyTurn()
-    {
-
+        // ==================== CARD ACTIONS ==================== //
+        else
+        {
+            if (slot.HasCard)
+            {
+                slot.Card.Action(board.GetGrid(), slot.row, slot.position);
+                mana--;
+                Debug.Log("Action triggered at " + slot.Card.GetType().Name);
+                board.RefreshHealthDisplay();
+            }
+        }
     }
 
     void ShuffleDeck()
@@ -146,7 +216,37 @@ public class GameManager : MonoBehaviour
         foreach (Card card in allCards)
         {
             deck.Push(card);
-            Debug.Log(card.GetType().Name);
+        }
+    }
+
+    void ShuffleEnemyDeck()
+    {
+        List<EnemyCard> allCards = new List<EnemyCard>();
+
+        // add nine of each basic card
+        for (int i = 0; i < 9; i++)
+        {
+            allCards.Add(new Ogre());
+            allCards.Add(new Goblin());
+            allCards.Add(new Hellhound());
+            allCards.Add(new Dragonborn());
+        }
+
+        // shuffle all the cards
+        int n = allCards.Count;
+        while (n > 1)
+        {
+            n--;
+            int k = Random.Range(0, n);
+            EnemyCard value = allCards[k];
+            allCards[k] = allCards[n];
+            allCards[n] = value;
+        }
+
+        // add the cards to the deck
+        foreach (EnemyCard card in allCards)
+        {
+            enemyDeck.Push(card);
         }
     }
 }

@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 public class Slot : MonoBehaviour
@@ -9,6 +10,8 @@ public class Slot : MonoBehaviour
     GameManager gameManager;
     SpriteRenderer spriteRenderer;
     GameObject border;
+    TMP_Text textLabel;
+
     public Card? Card { get; private set; }
 
     // Start is called before the first frame update
@@ -16,6 +19,9 @@ public class Slot : MonoBehaviour
     {
         gameManager = GameObject.FindGameObjectWithTag("GameManager").GetComponent<GameManager>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+
+        if (transform.childCount > 0)
+            textLabel = transform.GetChild(0).gameObject.GetComponentInChildren<TMP_Text>();
     }
 
     // Update is called once per frame
@@ -65,5 +71,10 @@ public class Slot : MonoBehaviour
     public void DisableBorder()
     {
         border.SetActive(false);
+    }
+
+    public void SetLabel(string text)
+    {
+        textLabel.text = text;
     }
 }
