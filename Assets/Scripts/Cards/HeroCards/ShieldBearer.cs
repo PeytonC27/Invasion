@@ -7,13 +7,17 @@ public class ShieldBearer : Card
 {
     public ShieldBearer() : base(Resources.Load<Sprite>("sprites/shield_bearer"), 1) { }
 
-    public override void Action(Slot[,] board, int row, int column)
+    public override void Action(Board board, int row, int column)
     {
-        if (board[column + 1, row].Card is EnemyCard)
+        Card otherCard = board.GetCardAt(row, column + 1);
+        if (otherCard is EnemyCard)
         {
-            EnemyCard enem = board[column + 1, row].Card as EnemyCard;
+            EnemyCard enem = otherCard as EnemyCard;
             enem.Health -= Damage;
-            Debug.Log("Hit " + board[column + 1, row].Card.GetType().Name);
+            Debug.Log("Hit " + otherCard.GetType().Name);
+
+            if (enem.Health <= 0)
+                Debug.Log("Shield Bearer killed " + board.GetCardAt(row, column + 1).GetType().Name + "!");
         }
     }
 }

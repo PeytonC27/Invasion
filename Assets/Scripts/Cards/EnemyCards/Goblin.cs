@@ -6,20 +6,15 @@ public class Goblin : EnemyCard
 {
     public Goblin() : base(Resources.Load<Sprite>("sprites/goblin"), 2, 1, 1) { }
 
-    public override void Action(Slot[,] board, int row, int column)
+    public override void Action(Board board, int row, int column)
     {
-        int tempDamage = 1;
+        int tempDamage = board.Count(c => c is Goblin);
+        Card heroCard = board.GetCardAt(row, column - 1);
 
-        for (int i = 0; i < board.GetLength(0); i++)
-            for (int j = 0; j < board.GetLength(1); j++)
-                if (board[i, j].Card is Goblin)
-                    tempDamage++;
-
-        if (board[column - 1, row].Card is Card && board[column - 1, row].Card is not EnemyCard)
+        if (heroCard is Card && heroCard is not EnemyCard)
         {
-            Card hero = board[column - 1, row].Card;
-            if (hero.Defense < tempDamage)
-                Debug.Log(hero.GetType().Name + " was killed by Ogre");
+            if (heroCard.Defense < tempDamage)
+                Debug.Log(heroCard.GetType().Name + " was killed by Ogre");
         }
     }
 }

@@ -63,8 +63,6 @@ public class GameManager : MonoBehaviour
                 }
             }
 
-            mana = 3;
-
             // get three most recent cards
             Card card1 = deck.Pop();
             Card card2 = deck.Pop();
@@ -84,7 +82,7 @@ public class GameManager : MonoBehaviour
 
 
         // ==================== ENDING CARD PHASE ==================== //
-        if (playerCardPhase && Input.GetKeyDown(KeyCode.Escape) || cardOptions <= 0)
+        if (playerCardPhase && Input.GetKeyDown(KeyCode.Space))
         {
             playerCardPhase = false;
             cardPhaseActive = false;
@@ -92,54 +90,17 @@ public class GameManager : MonoBehaviour
             cardOptions = 2;
 
             // count extra mana from clerics
-            Slot[,] grid = board.GetGrid();
-
-            for (int i = 0; i < grid.GetLength(0); i++)
-                for (int j = 0; j < grid.GetLength(1); j++)
-                    if (grid[i, j].HasCard && grid[i, j].Card is Cleric)
-                        mana++;
+            mana = 3 + board.Count((Card c) => c is Cleric);
 
             Debug.Log("Mana: " + mana);
         }
 
         // ==================== ENEMY TURN ==================== //
-        if (mana == 0 || Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape) && playerActionPhase)
         {
-            // fill rightmost column
-            board.FillRightmostColumn(enemyDeck.Pop(), enemyDeck.Pop(), enemyDeck.Pop());
-
-
-            // move active enemies
-            Slot[,] grid = board.GetGrid();
-            for (int i = 0; i < grid.GetLength(0); i++)
-            {
-                for (int j = 0;j < grid.GetLength(1); j++)
-                {
-                    if (grid[i, j].HasCard && grid[i,j].Card is EnemyCard)
-                    {
-                        EnemyCard e = grid[i, j].Card as EnemyCard;
-                        grid[i - e.MoveSpeed, j].AddCard(e);
-                        grid[i, j].RemoveCard();
-                    }
-                }
-            }
-
-            // perform enemy actions
-            for (int i = 0; i < grid.GetLength(0); i++)
-            {
-                for (int j = 0; j < grid.GetLength(1); j++)
-                {
-                    if (grid[i, j].HasCard && grid[i, j].Card is EnemyCard)
-                    {
-                        grid[i, j].Card.Action(grid, j, i);
-                    }
-                }
-            }
-
-            board.RefreshHealthDisplay();
-
-            playerCardPhase = true;
             playerActionPhase = false;
+            mana = 0;
+            StartCoroutine(EnemyTurn());
         }
     }
 
@@ -148,7 +109,7 @@ public class GameManager : MonoBehaviour
         // ==================== CARD MANIPULATION ==================== //
         if (cardOptions > 0 && cardPhaseActive)
         {
-            if (Input.GetKey(replace) && slot.HasCard)
+            if (Input.GetKey(replace) && slot.HasCard && slot.Card is not EnemyCard)
             {
                 Slot drawSlot = drawSlotManager.ExtractSlotFromSelection();
                 if (drawSlot.Card == null)
@@ -158,7 +119,7 @@ public class GameManager : MonoBehaviour
                 drawSlotManager.ClearCurrentSlot();
                 cardOptions--;
             }
-            else if (Input.GetKey(discard) && slot.HasCard)
+            else if (Input.GetKey(discard) && slot.HasCard && slot.Card is not EnemyCard)
             {
                 slot.RemoveCard();
                 cardOptions--;
@@ -178,14 +139,32 @@ public class GameManager : MonoBehaviour
         // ==================== CARD ACTIONS ==================== //
         else
         {
-            if (slot.HasCard)
+            if (slot.HasCard && mana > 0)
             {
-                slot.Card.Action(board.GetGrid(), slot.row, slot.position);
+                slot.Card.Action(board, slot.row, slot.position);
                 mana--;
-                Debug.Log("Action triggered at " + slot.Card.GetType().Name);
                 board.RefreshHealthDisplay();
             }
         }
+    }
+
+    IEnumerator EnemyTurn()
+    {
+        // fill rightmost column
+        board.FillRightmostColumn(enemyDeck.Pop(), enemyDeck.Pop(), enemyDeck.Pop());
+        yield return new WaitForSeconds(0.5f);
+
+        // move active enemies
+        board.MoveAllEnemies();
+        yield return new WaitForSeconds(0.5f);
+
+        // perform enemy actions
+        board.PerformEnemyActions();
+
+        board.RefreshHealthDisplay();
+
+        playerCardPhase = true;
+        playerActionPhase = false;
     }
 
     void ShuffleDeck()

@@ -14,5 +14,5 @@ public abstract class Card
         Damage = damage;
     }
 
-    public abstract void Action(Slot[,] board, int row, int column);
+    public abstract void Action(Board board, int row, int column);
 }

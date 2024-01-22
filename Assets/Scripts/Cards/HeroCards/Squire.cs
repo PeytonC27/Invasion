@@ -7,13 +7,13 @@ public class Squire : Card
 {
     public Squire() : base(Resources.Load<Sprite>("sprites/squire"), 1) { }
 
-    public override void Action(Slot[,] board, int row, int column)
+    public override void Action(Board board, int row, int column)
     {
         int nearest = -1;
         // find nearest enemy
         for (int i = column; i < 6; i++)
         {
-            if (board[i, row].Card is EnemyCard)
+            if (board.GetCardAt(row, i) is EnemyCard)
             {
                 nearest = i;
                 break;
@@ -26,8 +26,11 @@ public class Squire : Card
             return;
         }
 
-        EnemyCard enem = board[nearest, row].Card as EnemyCard;
+        EnemyCard enem = board.GetCardAt(row, nearest) as EnemyCard;
         enem.Health -= Damage;
-        Debug.Log("Squire hit " + board[nearest, row].Card.GetType().Name);
+        Debug.Log("Squire hit " + board.GetCardAt(row, nearest).GetType().Name);
+
+        if (enem.Health <= 0)
+            Debug.Log("Squire killed " + board.GetCardAt(row, nearest).GetType().Name + "!");
     }
 }

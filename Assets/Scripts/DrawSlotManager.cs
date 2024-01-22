@@ -55,6 +55,7 @@ public class DrawSlotManager : MonoBehaviour
         slot1.AddCard(card1);
         slot2.AddCard(card2);
         slot3.AddCard(card3);
+        selected = 1;
         selectHighlight.transform.position = slot1.transform.position;
     }
 
