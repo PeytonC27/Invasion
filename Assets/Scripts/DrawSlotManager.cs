@@ -41,14 +41,6 @@ public class DrawSlotManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Clears the currently highlighted slot
-    /// </summary>
-    public void ClearCurrentSlot()
-    {
-        GetSlotFromSelection().RemoveCard();
-    }
-
-    /// <summary>
     /// Returns the currently highlighted slot
     /// </summary>
     /// <returns></returns>
@@ -57,6 +49,31 @@ public class DrawSlotManager : MonoBehaviour
         return GetSlotFromSelection();
     }
 
+    /// <summary>
+    /// This replaces the current selection with the passed
+    /// in card
+    /// </summary>
+    /// <param name="card"></param>
+    public void ReplaceCard(Card card)
+    {
+        GetSlotFromSelection().AddCard(card);
+    }
+
+    /// <summary>
+    /// Clears the currently highlighted slot
+    /// </summary>
+    public void ClearCurrentSlot()
+    {
+        GetSlotFromSelection().RemoveCard();
+    }
+
+
+    /// <summary>
+    /// Fills up every slot with the passed in cards
+    /// </summary>
+    /// <param name="card1"></param>
+    /// <param name="card2"></param>
+    /// <param name="card3"></param>
     public void FillSlots(HeroCard card1, HeroCard card2, HeroCard card3)
     {
         selectHighlight.SetActive(true);
@@ -89,6 +106,10 @@ public class DrawSlotManager : MonoBehaviour
         return retval;
     }
 
+    /// <summary>
+    /// Gets the slot based on the player's selection
+    /// </summary>
+    /// <returns></returns>
     Slot GetSlotFromSelection()
     {
         switch (selected)

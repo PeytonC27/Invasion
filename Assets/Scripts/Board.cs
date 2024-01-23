@@ -62,6 +62,7 @@ public class Board : MonoBehaviour
                     {
                         Debug.Log("The player lost.");
                         Time.timeScale = 0;
+                        return new();
                     }
 
                     // trample over every card in the enemy's path
@@ -95,6 +96,23 @@ public class Board : MonoBehaviour
                 if (board[i, j].HasCard && board[i, j].Card is EnemyCard)
                 {
                     board[i, j].Card.Action(this, j, i);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Clears the damage buff for every hero on the board
+    /// </summary>
+    public void ResetDamageBuffs()
+    {
+        for (int i = 0; i < board.GetLength(0); i++)
+        {
+            for (int j = 0; j < board.GetLength(1); j++)
+            {
+                if (board[i, j].Card is HeroCard)
+                {
+                    (board[i, j].Card as HeroCard).DamageBuff = 0;
                 }
             }
         }

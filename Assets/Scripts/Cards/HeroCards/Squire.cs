@@ -27,7 +27,7 @@ public class Squire : HeroCard
         }
 
         EnemyCard enem = board.GetCardAt(row, nearest) as EnemyCard;
-        enem.Health -= Damage;
+        enem.Health -= (Damage + DamageBuff);
         Debug.Log("Squire hit " + board.GetCardAt(row, nearest).GetType().Name);
 
         if (enem.Health <= 0)

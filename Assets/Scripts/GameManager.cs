@@ -86,6 +86,7 @@ public class GameManager : MonoBehaviour
             playerActionPhase = false;
             mana = 0;
             StartCoroutine(EnemyTurn());
+            board.ResetDamageBuffs();
         }
     }
 
@@ -96,12 +97,15 @@ public class GameManager : MonoBehaviour
         {
             if (Input.GetKey(replace) && slot.HasCard && slot.Card is not EnemyCard)
             {
+                // extract the slot and its card
                 Slot drawSlot = drawSlotManager.ExtractSlotFromSelection();
                 if (drawSlot.Card == null)
                     return;
 
+                // replace the cards
+                Card toReplace = slot.Card;
                 slot.AddCard(drawSlot.Card);
-                drawSlotManager.ClearCurrentSlot();
+                drawSlotManager.ReplaceCard(toReplace);
                 cardOptions--;
             }
             else if (Input.GetKey(discard) && slot.HasCard && slot.Card is not EnemyCard)
@@ -147,7 +151,6 @@ public class GameManager : MonoBehaviour
 
         // perform enemy actions
         board.PerformEnemyActions();
-
         board.RefreshHealthDisplay();
 
         playerCardPhase = true;

@@ -13,7 +13,7 @@ public class ShieldBearer : HeroCard
         if (otherCard is EnemyCard)
         {
             EnemyCard enem = otherCard as EnemyCard;
-            enem.Health -= Damage;
+            enem.Health -= (Damage + DamageBuff);
             Debug.Log("Hit " + otherCard.GetType().Name);
 
             if (enem.Health <= 0)
