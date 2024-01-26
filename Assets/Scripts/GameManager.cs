@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -15,14 +16,21 @@ public class GameManager : MonoBehaviour
 
     // enemy deck
     private Stack<EnemyCard> enemyDeck;
-    private List<EnemyCard> enemyDiscard;
 
+    // switching/altering turns
     DrawSlotManager drawSlotManager;
     Board board;
-    bool playerCardPhase = true, playerActionPhase = false;
-    bool cardPhaseActive = false;
+    bool playerCardPhase = true, playerActionPhase = false, reset = true;
     int mana = 3;
+    bool manaSet = false;
     int cardOptions;
+
+    // these are used when a card uses an ability that needs a second input
+    Card awaitingCard;
+    bool awaitingSelection;
+
+    // display
+    DisplayManager displayManager;
 
     private void Start()
     {
@@ -38,6 +46,9 @@ public class GameManager : MonoBehaviour
 
         board = GetComponentInChildren<Board>();
 
+        displayManager = GetComponentInChildren<DisplayManager>();
+
+
         // -8, -1, 5, -5
         
     }
@@ -45,24 +56,10 @@ public class GameManager : MonoBehaviour
     private void Update()
     {
         // ==================== PLAYER CARD TURN ==================== //
-        if (playerCardPhase && !cardPhaseActive)
+        if (playerCardPhase && drawSlotManager.IsEmpty() && !playerActionPhase && reset)
         {
-            cardPhaseActive = true;
-            cardOptions = 2;
-
-            // clear cards to discard
-            discardPile.AddRange(drawSlotManager.ClearSlots());
-
-            // get three most recent cards
-            HeroCard card1 = DrawNextCard();
-            HeroCard card2 = DrawNextCard();
-            HeroCard card3 = DrawNextCard();
-            drawSlotManager.FillSlots(card1, card2, card3);
-
-            // add them to the discard pile
-            discardPile.Add(card1);
-            discardPile.Add(card2);
-            discardPile.Add(card3);
+            reset = false;
+            EnterCardPhase(2, drawSlotManager.cardsToDraw);
         }
 
 
@@ -70,12 +67,18 @@ public class GameManager : MonoBehaviour
         if (playerCardPhase && Input.GetKeyDown(KeyCode.Space))
         {
             playerCardPhase = false;
-            cardPhaseActive = false;
             playerActionPhase = true;
-            cardOptions = 2;
 
             // count extra mana from clerics
-            mana = 3 + board.Count((Card c) => c is Cleric);
+            if (!manaSet)
+                mana = 3 + board.Count((Card c) => c is Cleric);
+            manaSet = true;
+
+            // discard hand
+            List<HeroCard> discarded = drawSlotManager.ClearSlots();
+            for (int i = 0; i < discarded.Count; i++)
+                discardPile.Add(discarded[i]);
+            
 
             Debug.Log("Mana: " + mana);
         }
@@ -84,16 +87,21 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape) && playerActionPhase)
         {
             playerActionPhase = false;
-            mana = 0;
+            reset = true;
+            manaSet = false;
             StartCoroutine(EnemyTurn());
-            board.ResetDamageBuffs();
+            playerCardPhase = true;
         }
+
+        // updating UI
+        displayManager.UpdatePhaseDisplay(playerCardPhase, playerActionPhase);
+        displayManager.UpdateManaDisplay(mana, playerActionPhase);
     }
 
     public void OnSlotClicked(Slot slot)
     {
         // ==================== CARD MANIPULATION ==================== //
-        if (cardOptions > 0 && cardPhaseActive)
+        if (cardOptions > 0 && playerCardPhase && !slot.IsEnemySlot())
         {
             if (Input.GetKey(replace) && slot.HasCard && slot.Card is not EnemyCard)
             {
@@ -125,14 +133,58 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // ==================== CARD ACTIONS ==================== //
-        else
+        // ==================== AWAITING ACTION ==================== //
+        else if (awaitingSelection)
         {
-            if (slot.HasCard && mana > 0)
+            // if the mage/paladin is waiting
+            if (slot.HasCard && (awaitingCard is Mage || awaitingCard is Paladin))
             {
-                slot.Card.Action(board, slot.row, slot.position);
+                HeroCard hero = awaitingCard as HeroCard;
+                hero.SpecialAction(board, slot.Card);
+                board.RefreshHealthDisplay();
+                awaitingSelection = false;
+                awaitingCard = null;
+            }
+        }
+
+        // ==================== CARD ACTIONS ==================== //
+        else if (playerActionPhase && !slot.IsEnemySlot())
+        {
+            if (!slot.HasCard)
+                return;
+
+
+            Card card = slot.Card;
+
+            // every card slot except the farmer
+            if (mana > 0 && card is HeroCard && !(card as HeroCard).OnCooldown)
+            {
+                HeroCard hero = card as HeroCard;
+
+                // all other cards have simple actions
+                
+                if (hero is Mage || hero is Paladin)
+                {
+                    awaitingSelection = true;
+                    awaitingCard = hero;
+                }
+                // the farmer essentially brings you back to the card stage
+                // where you can place/replace a card
+                else if (hero is Farmer)
+                {
+                    playerCardPhase = true;
+                    playerActionPhase = false;
+                    EnterCardPhase(1, 2);
+                }
+
+                hero.Action(board, slot.row, slot.position);
+                hero.OnCooldown = true;
                 mana--;
                 board.RefreshHealthDisplay();
+            }
+            else if ((card as HeroCard).OnCooldown) 
+            {
+                Debug.Log(card.Name + " is on cooldown");
             }
         }
     }
@@ -143,25 +195,35 @@ public class GameManager : MonoBehaviour
         if (enemyDeck.Count < 3)
             ShuffleEnemyDeck();
         board.FillRightmostColumn(enemyDeck.Pop(), enemyDeck.Pop(), enemyDeck.Pop());
+        board.RefreshHealthDisplay();
         yield return new WaitForSeconds(0.5f);
 
         // move active enemies
         discardPile.AddRange(board.MoveAllEnemies());
+        board.RefreshHealthDisplay();
         yield return new WaitForSeconds(0.5f);
 
         // perform enemy actions
         board.PerformEnemyActions();
         board.RefreshHealthDisplay();
-
-        playerCardPhase = true;
-        playerActionPhase = false;
+        board.ResetDamageBuffs();
     }
 
-    public HeroCard DrawNextCard()
+    void EnterCardPhase(int options, int cardsToDraw)
     {
-        if (deck.Count == 0)
+        cardOptions = options;
+
+        // clear cards to discard
+        if (deck.Count < cardsToDraw)
             ShuffleInDeck(discardPile);
-        return deck.Pop();
+
+        // get three most recent cards
+        drawSlotManager.DrawCards(deck, cardsToDraw);
+    }
+
+    public void DisplayCardInfo(Card card)
+    {
+        displayManager.UpdateInfoDisplay(card, playerActionPhase);
     }
 
     void SetupDeck()
@@ -175,6 +237,10 @@ public class GameManager : MonoBehaviour
             allCards.Add(new Cleric());
             allCards.Add(new Squire());
             allCards.Add(new Trickster());
+            allCards.Add(new Mage());
+            allCards.Add(new Warrior());
+            allCards.Add(new Paladin());
+            allCards.Add(new Farmer());
         }
 
         ShuffleInDeck(allCards);
@@ -224,5 +290,7 @@ public class GameManager : MonoBehaviour
 
         foreach (HeroCard card in allCards)
             deck.Push(card);
+
+        discardPile.Clear();
     }
 }

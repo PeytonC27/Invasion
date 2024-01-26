@@ -9,34 +9,44 @@ public class Slot : MonoBehaviour
 
     GameManager gameManager;
     SpriteRenderer spriteRenderer;
-    GameObject border;
     TMP_Text textLabel;
+    GameObject highlight;
 
-    public Card? Card { get; private set; }
+    public Card Card { get; private set; }
 
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
         gameManager = GameObject.FindGameObjectWithTag("GameManager").GetComponent<GameManager>();
         spriteRenderer = GetComponent<SpriteRenderer>();
 
-        
-        textLabel = transform.GetChild(0).gameObject.GetComponentInChildren<TMP_Text>();
+        textLabel = transform.GetChild(0).GetComponentInChildren<TMP_Text>();
+        highlight = transform.GetChild(1).gameObject;
+
+        highlight.SetActive(false);
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
-        {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
 
-            if (hit.collider != null && hit.transform.gameObject.name == this.name)
-            {
+        // mouse is over the card
+        if (hit.collider != null && hit.transform.gameObject.name == this.name)
+        {
+            if (Input.GetMouseButtonDown(0))
                 gameManager.OnSlotClicked(hit.transform.gameObject.GetComponent<Slot>());
-            }
+
+            gameManager.DisplayCardInfo(Card);
+
+            if (!IsEnemySlot())
+                highlight.SetActive(true);
         }
+        else
+        {
+            highlight.SetActive(false);
+        }
+        
     }
 
     public void AddCard(Card card)
@@ -74,5 +84,10 @@ public class Slot : MonoBehaviour
     public void DisableLabel()
     {
         textLabel.text = "";
+    }
+
+    public bool IsEnemySlot()
+    {
+        return position >= Board.boardLength/2;
     }
 }

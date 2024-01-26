@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Hellhound : EnemyCard
 {
-    public Hellhound() : base(Resources.Load<Sprite>("sprites/hellhound"), 2, 0, 2) { }
+    public Hellhound() : base("Hellhound", Resources.Load<Sprite>("sprites/hellhound"), 2, 0, 2) { }
 
     public override void Action(Board board, int row, int column)
     {

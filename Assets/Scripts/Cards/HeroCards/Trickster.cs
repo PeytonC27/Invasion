@@ -1,20 +1,19 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Trickster : HeroCard
 {
-    public Trickster() : base(Resources.Load<Sprite>("sprites/trickster"), 0, 1) { }
+    public Trickster() : base("Trickster", Resources.Load<Sprite>("sprites/trickster"), 0, 1) { }
 
     public override void Action(Board board, int row, int column)
     {
+        //
         for (int i = column; i < 6; i++)
         {
-            if (board.GetCardAt(row, i) is HeroCard && board.GetCardAt(row, i) is not Trickster)
+            Card card = board.GetCardAt(row, i);
+            if (card is HeroCard)
             {
-                HeroCard hero = board.GetCardAt(row, i) as HeroCard;
-                hero.DamageBuff++;
-                Debug.Log("The trickster empowered the " + hero.GetType().Name);
+                (card as HeroCard).Empower = true;
+                Debug.Log(card.GetType().Name + " was empowered!");
             }
         }
     }

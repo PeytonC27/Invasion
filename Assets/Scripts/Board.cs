@@ -9,30 +9,43 @@ using UnityEngine.Tilemaps;
 public class Board : MonoBehaviour
 {
     [SerializeField] Slot clickableSlot;
-    [SerializeField] Slot nonClickableSlot;
+    [SerializeField] int length;
+    [SerializeField] int height;
+    [SerializeField] float yOffset = 2;
+    [SerializeField] Vector2 startingPosition = new(-10.5f, -4.5f); // the top left
 
     Slot[,] board;
 
+    public static int boardLength;
+    public static int boardHeight;
 
-    private float[] xCoords = { -7.5f, -4.5f, -1.5f, 1.5f, 4.5f, 7.5f };
-    private float[] yCoords = { 4.5f, 0f, -4.5f };
     private void Start()
     {
-        board = new Slot[6, 3];
+        boardLength = length;
+        boardHeight = height;
 
-        for (int y = 0;  y < yCoords.Length; y++)
+        board = new Slot[length, height];
+
+        float xPos = startingPosition.x;
+        float yPos = startingPosition.y;
+        float xJump = (Math.Abs(startingPosition.x) * 2) / (length-1);
+        float yJump = (Math.Abs(startingPosition.y) * 2) / (height-1);
+
+        // spawn the slots
+        for (int y = 0;  y < height; y++)
         {
-            for (int x = 0; x < xCoords.Length; x++)
+            for (int x = 0; x < length; x++)
             {
-                Slot toInstantiate = (x < 3) ? clickableSlot : nonClickableSlot;
-
-                Slot slot = Instantiate(toInstantiate, new Vector2(xCoords[x], yCoords[y]), Quaternion.identity, transform);
+                Slot slot = Instantiate(clickableSlot, new Vector2(xPos, yPos + yOffset), Quaternion.identity, transform);
                 slot.row = y;
                 slot.position = x;
                 slot.GetComponent<SpriteRenderer>().sortingOrder = 1;
                 slot.name = "Slot " + x + " " + y;
                 board[x, y] = slot;
+                xPos += xJump;
             }
+            xPos = startingPosition.x;
+            yPos += yJump;
         }
     }
 
@@ -70,7 +83,7 @@ public class Board : MonoBehaviour
                     {
                         if (board[k, j].HasCard)
                         {
-                            Debug.Log(e.GetType().Name + " trampled a " + board[k, j].Card.GetType().Name);
+                            Debug.Log(e.Name + " trampled a " + board[k, j].Card.Name);
                             Card trampled = board[k, j].RemoveCard();
                             if (trampled is HeroCard)
                                 retval.Add(trampled as HeroCard);
@@ -101,6 +114,19 @@ public class Board : MonoBehaviour
         }
     }
 
+    public Slot GetSlotFromCard(Card card)
+    {
+        for (int i = 0; i < board.GetLength(0); i++)
+        {
+            for (int j = 0; j < board.GetLength(1); j++)
+            {
+                if (board[i, j].Card == card)
+                    return board[i, j];
+            }
+        }
+        return null;
+    }
+
     /// <summary>
     /// Clears the damage buff for every hero on the board
     /// </summary>
@@ -110,9 +136,13 @@ public class Board : MonoBehaviour
         {
             for (int j = 0; j < board.GetLength(1); j++)
             {
-                if (board[i, j].Card is HeroCard)
+                Card card = board[i, j].Card;
+                if (card is HeroCard)
                 {
-                    (board[i, j].Card as HeroCard).DamageBuff = 0;
+                    HeroCard hero = card as HeroCard;
+                    hero.Empower = false;
+                    hero.Protected = false;
+                    hero.OnCooldown = false;
                 }
             }
         }
@@ -132,6 +162,7 @@ public class Board : MonoBehaviour
                     count++;
         return count;
     }
+
 
     public void RemoveCardAt(int row, int column)
     {

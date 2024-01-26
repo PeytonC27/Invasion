@@ -6,37 +6,41 @@ using UnityEngine;
 
 public class DrawSlotManager : MonoBehaviour
 {
-    Slot slot1;
-    Slot slot2;
-    Slot slot3;
+    [SerializeField] Slot nonClickableSlot;
+    [SerializeField] float yOffset;
+    [SerializeField] float length = 9;
+
+    List<Slot> slots;
     GameObject selectHighlight;
-    int selected = 1;
+    int selected = 0;
+    public int cardsToDraw = 5;
 
     // Start is called before the first frame update
     void Start()
     {
-        slot1 = transform.GetChild(0).GetComponent<Slot>();
-        slot2 = transform.GetChild(1).GetComponent<Slot>();
-        slot3 = transform.GetChild(2).GetComponent<Slot>();
-        selectHighlight = transform.GetChild(3).gameObject;
+        slots = new List<Slot>();
+        selectHighlight = transform.GetChild(0).gameObject;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (Input.mouseScrollDelta.y < 0)
+        if (!IsEmpty())
         {
-            selected++;
-            if (selected > 3)
-                selected = 0;
-            selectHighlight.transform.position = GetSlotFromSelection().transform.position;
-        }
-        else if (Input.mouseScrollDelta.y > 0)
-        {
-            selected--;
-            if (selected < 1)
-                selected = 3;
-            selectHighlight.transform.position = GetSlotFromSelection().transform.position;
+            if (Input.mouseScrollDelta.y < 0)
+            {
+                selected++;
+                if (selected >= slots.Count)
+                    selected = 0;
+                selectHighlight.transform.position = GetSlotFromSelection().transform.position;
+            }
+            else if (Input.mouseScrollDelta.y > 0)
+            {
+                selected--;
+                if (selected < 0)
+                    selected = slots.Count-1;
+                selectHighlight.transform.position = GetSlotFromSelection().transform.position;
+            }
         }
     }
 
@@ -69,19 +73,44 @@ public class DrawSlotManager : MonoBehaviour
 
 
     /// <summary>
-    /// Fills up every slot with the passed in cards
+    /// Draws the default hand size into the player's hand
     /// </summary>
-    /// <param name="card1"></param>
-    /// <param name="card2"></param>
-    /// <param name="card3"></param>
-    public void FillSlots(HeroCard card1, HeroCard card2, HeroCard card3)
+    /// <param name="cards"></param>
+    public void DrawCards(Stack<HeroCard> cards)
     {
         selectHighlight.SetActive(true);
-        slot1.AddCard(card1);
-        slot2.AddCard(card2);
-        slot3.AddCard(card3);
-        selected = 1;
-        selectHighlight.transform.position = slot1.transform.position;
+        float diff = length/(cardsToDraw-1);
+        float posX = -length/2;
+        for (int i = 0; i < cardsToDraw; i++)
+        {
+            Slot newSlot = Instantiate(nonClickableSlot, new Vector2(posX, -10 + yOffset), Quaternion.identity, transform);
+            newSlot.AddCard(cards.Pop());
+            slots.Add(newSlot);
+            posX += diff;
+        }
+        selected = 0;
+        selectHighlight.transform.position = slots[0].transform.position;
+    }
+
+    /// <summary>
+    /// Draws a specfic amount of cards into the player's hand
+    /// </summary>
+    /// <param name="cards"></param>
+    /// <param name="amount"></param>
+    public void DrawCards(Stack<HeroCard> cards, int amount)
+    {
+        selectHighlight.SetActive(true);
+        float diff = length / (amount - 1);
+        float posX = -length / 2;
+        for (int i = 0; i < amount; i++)
+        {
+            Slot newSlot = Instantiate(nonClickableSlot, new Vector2(posX, -10 + yOffset), Quaternion.identity, transform);
+            newSlot.AddCard(cards.Pop());
+            slots.Add(newSlot);
+            posX += diff;
+        }
+        selected = 0;
+        selectHighlight.transform.position = slots[0].transform.position;
     }
 
     /// <summary>
@@ -91,18 +120,14 @@ public class DrawSlotManager : MonoBehaviour
     public List<HeroCard> ClearSlots()
     {
         List<HeroCard> retval = new();
+        for (int i = 0; i < slots.Count; i++)
+        {
+            retval.Add(slots[i].Card as HeroCard);
+            Destroy(slots[i].gameObject);
+        }
+
+        slots.Clear();
         selectHighlight.SetActive(false);
-        if (slot1.HasCard)
-            retval.Add(slot1.Card as HeroCard);
-        if (slot2.HasCard)
-            retval.Add(slot2.Card as HeroCard);
-        if (slot3.HasCard)
-            retval.Add(slot3.Card as HeroCard);
-
-        slot1.RemoveCard();
-        slot2.RemoveCard();
-        slot3.RemoveCard();
-
         return retval;
     }
 
@@ -112,12 +137,11 @@ public class DrawSlotManager : MonoBehaviour
     /// <returns></returns>
     Slot GetSlotFromSelection()
     {
-        switch (selected)
-        {
-            case 1: return slot1;
-            case 2: return slot2;
-            case 3: return slot3;
-            default: return slot1;
-        }
+        return slots[selected];
+    }
+
+    public bool IsEmpty()
+    {
+        return slots.Count == 0;
     }
 }
